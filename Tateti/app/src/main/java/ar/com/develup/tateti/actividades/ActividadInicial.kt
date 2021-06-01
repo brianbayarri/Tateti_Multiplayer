@@ -6,19 +6,29 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import ar.com.develup.tateti.R
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.ktx.Firebase
 import kotlinx.android.synthetic.main.actividad_inicial.*
 
 class ActividadInicial : AppCompatActivity() {
 
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.actividad_inicial)
+        firebaseAnalytics = Firebase.analytics
 
         iniciarSesion.setOnClickListener { iniciarSesion() }
         registrate.setOnClickListener { registrate() }
         olvideMiContrasena.setOnClickListener { olvideMiContrasena() }
 
         if (usuarioEstaLogueado()) {
+            firebaseAnalytics.logEvent("user_already_log_in") {
+                param(FirebaseAnalytics.Param.SCREEN_CLASS, "MainActivity")
+            }
             // Si el usuario esta logueado, se redirige a la pantalla
             // de partidas
             verPartidas()
@@ -94,6 +104,9 @@ class ActividadInicial : AppCompatActivity() {
         val email = email.text.toString()
         val password = password.text.toString()
 
+        firebaseAnalytics.logEvent("user_log_in") {
+            param("user", email)
+        }
 
         // TODO-05-AUTHENTICATION
         // IMPORTANTE: Eliminar  la siguiente linea cuando se implemente authentication

@@ -6,7 +6,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import ar.com.develup.tateti.R
 import ar.com.develup.tateti.adaptadores.AdaptadorPartidas
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.ktx.Firebase
 import kotlinx.android.synthetic.main.actividad_partidas.*
+import java.util.*
 
 class ActividadPartidas : AppCompatActivity() {
 
@@ -14,11 +19,13 @@ class ActividadPartidas : AppCompatActivity() {
         private const val TAG = "ActividadPartidas"
     }
 
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
     private lateinit var adaptadorPartidas: AdaptadorPartidas
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.actividad_partidas)
+        firebaseAnalytics = Firebase.analytics
         adaptadorPartidas = AdaptadorPartidas(this)
         partidas.layoutManager = LinearLayoutManager(this)
         partidas.adapter = adaptadorPartidas
@@ -33,6 +40,9 @@ class ActividadPartidas : AppCompatActivity() {
     }
 
     fun nuevaPartida() {
+        firebaseAnalytics.logEvent("new_game_match") {
+            param("Datime", Calendar.getInstance().time.toString())
+        }
         val intent = Intent(this, ActividadPartida::class.java)
         startActivity(intent)
     }

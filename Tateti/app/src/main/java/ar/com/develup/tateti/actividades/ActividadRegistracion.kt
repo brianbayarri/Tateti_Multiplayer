@@ -4,13 +4,21 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import ar.com.develup.tateti.R
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.ktx.Firebase
 import kotlinx.android.synthetic.main.actividad_registracion.*
+import java.util.*
 
 class ActividadRegistracion : AppCompatActivity() {
+
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.actividad_registracion)
+        firebaseAnalytics = Firebase.analytics
         registrar.setOnClickListener { registrarse() }
     }
 
@@ -24,6 +32,9 @@ class ActividadRegistracion : AppCompatActivity() {
             Snackbar.make(rootView, "Email requerido", Snackbar.LENGTH_SHORT).show()
         } else if (passwordIngresada == confirmarPasswordIngresada) {
             // Si completo el email y las contraseñas coinciden, registramos el usuario en Firebase
+            firebaseAnalytics.logEvent("new_user") {
+                param("Email", email)
+            }
             registrarUsuarioEnFirebase(email, passwordIngresada)
         } else {
             // No coinciden las contraseñas, mostramos mensaje de error
