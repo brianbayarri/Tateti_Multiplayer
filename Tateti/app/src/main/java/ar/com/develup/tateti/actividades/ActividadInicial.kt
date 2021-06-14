@@ -10,11 +10,15 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.ktx.remoteConfig
+import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.android.synthetic.main.actividad_inicial.*
 
 class ActividadInicial : AppCompatActivity() {
 
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private lateinit var remoteConfig : FirebaseRemoteConfig
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +28,15 @@ class ActividadInicial : AppCompatActivity() {
         iniciarSesion.setOnClickListener { iniciarSesion() }
         registrate.setOnClickListener { registrate() }
         olvideMiContrasena.setOnClickListener { olvideMiContrasena() }
+
+        //RemoteConfig
+        remoteConfig = Firebase.remoteConfig
+        val configSettings = remoteConfigSettings {
+            minimumFetchIntervalInSeconds = 3600
+            fetchTimeoutInSeconds = 10
+        }
+        remoteConfig.setConfigSettingsAsync(configSettings)
+
 
         if (usuarioEstaLogueado()) {
             firebaseAnalytics.logEvent("user_already_log_in") {
@@ -59,21 +72,24 @@ class ActividadInicial : AppCompatActivity() {
     }
 
     private fun configurarDefaultsRemoteConfig() {
-        // TODO-04-REMOTECONFIG
-        // Configurar los valores por default para remote config,
-        // ya sea por codigo o por XML
+        remoteConfig.setDefaultsAsync(
+            mapOf("show_forget_password" to false))
     }
 
     private fun configurarOlvideMiContrasena() {
-        // TODO-04-REMOTECONFIG
-        // Obtener el valor de la configuracion para saber si mostrar
-        // o no el boton de olvide mi contraseña
-        val botonOlvideHabilitado = false
-        if (botonOlvideHabilitado) {
-            olvideMiContrasena.visibility = View.VISIBLE
-        } else {
-            olvideMiContrasena.visibility = View.GONE
+        Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener() { task ->
+            if(task.isSuccessful) {
+                val botonOlvideHabilitado = Firebase.remoteConfig.getBoolean("show_forget_password")
+
+                if (botonOlvideHabilitado) {
+                    olvideMiContrasena.visibility = View.VISIBLE
+                } else {
+                    olvideMiContrasena.visibility = View.GONE
+                }
+            }
         }
+
+
     }
 
     private fun olvideMiContrasena() {
