@@ -5,15 +5,25 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import ar.com.develup.tateti.R
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.android.synthetic.main.actividad_inicial.*
+import kotlinx.android.synthetic.main.actividad_inicial.email
+import kotlinx.android.synthetic.main.actividad_inicial.password
+import kotlinx.android.synthetic.main.actividad_inicial.rootView
+import kotlinx.android.synthetic.main.actividad_registracion.*
 
 class ActividadInicial : AppCompatActivity() {
 
@@ -53,7 +63,7 @@ class ActividadInicial : AppCompatActivity() {
     private fun usuarioEstaLogueado(): Boolean {
         // TODO-05-AUTHENTICATION
         // Validar que currentUser sea != null
-        return false
+        return FirebaseAuth.getInstance().currentUser != null
     }
 
     private fun verPartidas() {
@@ -93,26 +103,19 @@ class ActividadInicial : AppCompatActivity() {
     }
 
     private fun olvideMiContrasena() {
-        // Obtengo el mail
         val email = email.text.toString()
 
-        // Si no completo el email, muestro mensaje de error
         if (email.isEmpty()) {
             Snackbar.make(rootView!!, "Completa el email", Snackbar.LENGTH_SHORT).show()
         } else {
-            // TODO-05-AUTHENTICATION
-            // Si completo el mail debo enviar un mail de reset
-            // Para ello, utilizamos sendPasswordResetEmail con el email como parametro
-            // Agregar el siguiente fragmento de codigo como CompleteListener, que notifica al usuario
-            // el resultado de la operacion
-
-            //  .addOnCompleteListener { task ->
-            //      if (task.isSuccessful) {
-            //          Snackbar.make(rootView, "Email enviado", Snackbar.LENGTH_SHORT).show()
-            //      } else {
-            //          Snackbar.make(rootView, "Error " + task.exception, Snackbar.LENGTH_SHORT).show()
-            //      }
-            //  }
+            FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                .addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        showAlert("Email enviado")
+                    } else {
+                        showAlert("Error enviando email")
+                    }
+                }
         }
     }
 
@@ -120,36 +123,47 @@ class ActividadInicial : AppCompatActivity() {
         val email = email.text.toString()
         val password = password.text.toString()
 
-        firebaseAnalytics.logEvent("user_log_in") {
-            param("user", email)
+        when {
+            email.isEmpty() -> showAlert("El email es requerido")
+            password.isEmpty() -> showAlert("La contraseña es requerida")
+            else -> {
+                FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(authenticationListener)
+                    .addOnCompleteListener {
+                        if (it.isSuccessful) {
+                            verPartidas()
+                            firebaseAnalytics.logEvent("user_log_in") {
+                                param("user", email)
+                            }
+                        } else {
+                            showAlert("Ocurrio un error iniciando sesion")
+                        }
+                    }
+                firebaseAnalytics.logEvent("new_user") {
+                    param("Email", email)
+                }
+            }
         }
-
         // TODO-05-AUTHENTICATION
-        // IMPORTANTE: Eliminar  la siguiente linea cuando se implemente authentication
-        verPartidas()
-
-
-        // TODO-05-AUTHENTICATION
-        // hacer signInWithEmailAndPassword con los valores ingresados de email y password
         // Agregar en addOnCompleteListener el campo authenticationListener definido mas abajo
     }
 
-    //    private val authenticationListener: OnCompleteListener<AuthResult?> = OnCompleteListener<AuthResult?> { task ->
-    //        if (task.isSuccessful) {
-    //            if (usuarioVerificoEmail()) {
-    //                verPartidas()
-    //            } else {
-    //                desloguearse()
-    //                Snackbar.make(rootView!!, "Verifica tu email para continuar", Snackbar.LENGTH_SHORT).show()
-    //            }
-    //        } else {
-    //            if (task.exception is FirebaseAuthInvalidUserException) {
-    //                Snackbar.make(rootView!!, "El usuario no existe", Snackbar.LENGTH_SHORT).show()
-    //            } else if (task.exception is FirebaseAuthInvalidCredentialsException) {
-    //                Snackbar.make(rootView!!, "Credenciales inválidas", Snackbar.LENGTH_SHORT).show()
-    //            }
-    //        }
-    //    }
+        private val authenticationListener: OnCompleteListener<AuthResult?> = OnCompleteListener<AuthResult?> { task ->
+           if (task.isSuccessful) {
+                if (usuarioVerificoEmail()) {
+                    verPartidas()
+                } else {
+                    desloguearse()
+                    Snackbar.make(rootView!!, "Verifica tu email para continuar", Snackbar.LENGTH_SHORT).show()
+                }
+            } else {
+                if (task.exception is FirebaseAuthInvalidUserException) {
+                    Snackbar.make(rootView!!, "El usuario no existe", Snackbar.LENGTH_SHORT).show()
+                } else if (task.exception is FirebaseAuthInvalidCredentialsException) {
+                    Snackbar.make(rootView!!, "Credenciales inválidas", Snackbar.LENGTH_SHORT).show()
+                }
+            }
+        }
 
     private fun usuarioVerificoEmail(): Boolean {
         // TODO-05-AUTHENTICATION
@@ -158,7 +172,11 @@ class ActividadInicial : AppCompatActivity() {
     }
 
     private fun desloguearse() {
-        // TODO-05-AUTHENTICATION
-        // Hacer signOut de Firebase
+        FirebaseAuth.getInstance().signOut()
     }
+
+    private fun showAlert(message: String) {
+        Snackbar.make(rootView, message, Snackbar.LENGTH_SHORT).show()
+    }
+
 }

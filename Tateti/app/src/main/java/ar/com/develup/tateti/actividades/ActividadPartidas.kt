@@ -9,6 +9,8 @@ import ar.com.develup.tateti.adaptadores.AdaptadorPartidas
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.android.synthetic.main.actividad_partidas.*
 import java.util.*
@@ -30,6 +32,17 @@ class ActividadPartidas : AppCompatActivity() {
         partidas.layoutManager = LinearLayoutManager(this)
         partidas.adapter = adaptadorPartidas
         nuevaPartida.setOnClickListener { nuevaPartida() }
+        cerrarSesionButton.setOnClickListener { cerrarSesion() }
+    }
+
+    private fun cerrarSesion() {
+        FirebaseAuth.getInstance().signOut()
+        showLoginScreen()
+    }
+
+    private fun showLoginScreen() {
+        val intent = Intent(this, ActividadInicial::class.java)
+        startActivity(intent)
     }
 
     override fun onResume() {
