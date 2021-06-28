@@ -4,11 +4,14 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import ar.com.develup.tateti.R
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.ktx.Firebase
 import kotlinx.android.synthetic.main.actividad_registracion.*
 import java.util.*
@@ -34,7 +37,6 @@ class ActividadRegistracion : AppCompatActivity() {
         } else if (passwordIngresada.isEmpty() || confirmarPasswordIngresada.isEmpty()) {
             showAlert("La contraseña es requerida")
         } else if (passwordIngresada == confirmarPasswordIngresada) {
-
             registrarUsuarioEnFirebase(email, passwordIngresada)
         } else {
             showAlert("Las contraseñas no coinciden")
@@ -43,17 +45,9 @@ class ActividadRegistracion : AppCompatActivity() {
     }
 
     private fun registrarUsuarioEnFirebase(email: String, passwordIngresada: String) {
-        // TODO-05-AUTHENTICATION
-        // Crear el usuario con el email y passwordIngresada
-        // Ademas, registrar en CompleteListener el listener registracionCompletaListener definido mas abajo
         FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, passwordIngresada)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    showHome()
-                } else {
-                    showAlert("Ocurrio un error registrando al usuario")
-                }
-            }
+            .addOnCompleteListener(this, registracionCompletaListener)
+
         firebaseAnalytics.logEvent("new_user") {
             param("Email", email)
         }
@@ -68,22 +62,19 @@ class ActividadRegistracion : AppCompatActivity() {
         startActivity(intent)
     }
 
-//    private val registracionCompletaListener: OnCompleteListener<AuthResult?> = OnCompleteListener { task ->
-//        if (task.isSuccessful) {
-//            // Si se registro OK, muestro mensaje y envio mail de verificacion
-//            Snackbar.make(rootView, "Registro exitoso", Snackbar.LENGTH_SHORT).show()
-//            enviarEmailDeVerificacion()
-//        } else if (task.exception is FirebaseAuthUserCollisionException) {
-//            // Si el usuario ya existe, mostramos error
-//            Snackbar.make(rootView, "El usuario ya existe", Snackbar.LENGTH_SHORT).show()
-//        } else {
-//            // Por cualquier otro error, mostramos un mensaje de error
-//            Snackbar.make(rootView, "El registro fallo: " + task.exception, Snackbar.LENGTH_LONG).show()
-//        }
-//    }
+    private val registracionCompletaListener: OnCompleteListener<AuthResult?> = OnCompleteListener { task ->
+        if (task.isSuccessful) {
+            showAlert("Registro exitoso")
+            enviarEmailDeVerificacion()
+            showHome()
+        } else if (task.exception is FirebaseAuthUserCollisionException) {
+            showAlert("El usuario ya existe")
+        } else {
+            showAlert("El registro fallo: " + task.exception)
+        }
+    }
 
     private fun enviarEmailDeVerificacion() {
-        // TODO-05-AUTHENTICATION
-        // Enviar mail de verificacion al usuario currentUser
+        FirebaseAuth.getInstance().currentUser?.sendEmailVerification()
     }
 }

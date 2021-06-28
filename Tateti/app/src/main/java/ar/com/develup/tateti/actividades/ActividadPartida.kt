@@ -10,6 +10,7 @@ import ar.com.develup.tateti.modelo.Constantes
 import ar.com.develup.tateti.modelo.Movimiento
 import ar.com.develup.tateti.modelo.Partida
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.android.synthetic.main.actividad_partida.*
 import java.util.*
 
@@ -220,9 +221,7 @@ class ActividadPartida : AppCompatActivity() {
     }
 
     private fun obtenerIdDeUsuario(): String {
-        // TODO-05-AUTHENTICATION
-        // Obtener el uid del currentUser y retornarlo
-        return "devolver_id_de_usuario"
+        return FirebaseAuth.getInstance().currentUser!!.uid
     }
 
     private fun obtenerReferenciaALaBaseDeDatos() {
