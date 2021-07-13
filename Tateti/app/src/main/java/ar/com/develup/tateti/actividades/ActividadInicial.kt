@@ -9,10 +9,12 @@ import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.ktx.logEvent
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfig
@@ -21,6 +23,8 @@ import kotlinx.android.synthetic.main.actividad_inicial.*
 import kotlinx.android.synthetic.main.actividad_inicial.email
 import kotlinx.android.synthetic.main.actividad_inicial.password
 import kotlinx.android.synthetic.main.actividad_inicial.rootView
+import java.lang.Exception
+import java.util.*
 
 class ActividadInicial : AppCompatActivity() {
 
@@ -57,8 +61,14 @@ class ActividadInicial : AppCompatActivity() {
         val password = password.text.toString()
 
         when {
-            email.isEmpty() -> showMessage("El email es requerido")
-            password.isEmpty() -> showMessage("La contraseña es requerida")
+            email.isEmpty() -> {
+                FirebaseCrashlytics.getInstance().recordException(Exception("El usuario no ingreso su email"))
+                showMessage("El email es requerido")
+            }
+            password.isEmpty() -> {
+                FirebaseCrashlytics.getInstance().recordException(Exception("El usuario no ingreso su contraseña"))
+                showMessage("La contraseña es requerida")
+            }
             else -> {
                 FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(authenticationListener)
@@ -69,6 +79,9 @@ class ActividadInicial : AppCompatActivity() {
     private val authenticationListener: OnCompleteListener<AuthResult?> = OnCompleteListener<AuthResult?> { task ->
         if (task.isSuccessful) {
             if (usuarioVerificoEmail()) {
+                Firebase.analytics.logEvent("iniciar_sesion") {
+                    param("accion", "Usuario inicio sesion")
+                }
                 verPartidas()
             } else {
                 desloguearse()
@@ -76,8 +89,10 @@ class ActividadInicial : AppCompatActivity() {
             }
         } else {
             if (task.exception is FirebaseAuthInvalidUserException) {
+                FirebaseCrashlytics.getInstance().recordException(Exception("Usuario inexistente"))
                 showMessage("El usuario no existe")
             } else if (task.exception is FirebaseAuthInvalidCredentialsException) {
+                FirebaseCrashlytics.getInstance().recordException(Exception("Usuario ingreso credenciales invalidas"))
                 showMessage("Credenciales invalidas")
             }
         }
@@ -92,6 +107,9 @@ class ActividadInicial : AppCompatActivity() {
     }
 
     private fun registrate() {
+        Firebase.analytics.logEvent("click_registro") {
+            param("accion", "Usuario hizo click para registrarse")
+        }
         val intent = Intent(this, ActividadRegistracion::class.java)
         startActivity(intent)
     }
@@ -107,9 +125,14 @@ class ActividadInicial : AppCompatActivity() {
                     if (it.isSuccessful) {
                         showMessage("Email enviado")
                     } else {
+                        FirebaseCrashlytics.getInstance().recordException(Exception("Error enviando email para restaurar contraseña"))
                         showMessage("Error enviando email")
                     }
                 }
+        }
+
+        Firebase.analytics.logEvent("olvide_contrasena") {
+            param("accion", "Usuario hizo click en olvide mi contraseña")
         }
     }
 
@@ -127,6 +150,9 @@ class ActividadInicial : AppCompatActivity() {
     }
 
     private fun desloguearse() {
+        Firebase.analytics.logEvent("cerrar_sesion") {
+            param("accion", "Usuario cerro sesion")
+        }
         FirebaseAuth.getInstance().signOut()
     }
 

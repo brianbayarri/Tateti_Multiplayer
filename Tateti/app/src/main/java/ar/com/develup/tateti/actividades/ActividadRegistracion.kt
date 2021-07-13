@@ -47,10 +47,6 @@ class ActividadRegistracion : AppCompatActivity() {
     private fun registrarUsuarioEnFirebase(email: String, passwordIngresada: String) {
         FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, passwordIngresada)
             .addOnCompleteListener(this, registracionCompletaListener)
-
-        firebaseAnalytics.logEvent("new_user") {
-            param("Email", email)
-        }
     }
 
     private fun showAlert(message: String) {
