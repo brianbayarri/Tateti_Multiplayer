@@ -48,7 +48,8 @@ class ActividadPartidas : AppCompatActivity() {
     }
 
     private fun showLoginScreen() {
-        val intent = Intent(this, ActividadInicial::class.java)
+        val intent = Intent(applicationContext, ActividadInicial::class.java)
+        intent.putExtra("olvideHabilitado", false)
         startActivity(intent)
     }
 

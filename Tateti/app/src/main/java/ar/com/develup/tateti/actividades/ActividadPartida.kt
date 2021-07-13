@@ -97,6 +97,7 @@ class ActividadPartida : AppCompatActivity() {
             } catch (ignored: Exception) {
             }
         } else if (finalizo()) {
+            establecerGanador("empate")
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Partida finalizada")
             builder.setMessage("Es un empate")
